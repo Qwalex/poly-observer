@@ -1,18 +1,11 @@
-import {
-  Injectable,
-  Logger,
-  OnApplicationBootstrap,
-  OnModuleDestroy,
-} from '@nestjs/common';
+import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import WebSocket from 'ws';
+import { WebSocket } from 'ws';
 import { AppConfig } from '../config/configuration';
 import { PositionTrackerService } from './position-tracker.service';
 
 @Injectable()
-export class PolymarketWsService
-  implements OnApplicationBootstrap, OnModuleDestroy
-{
+export class PolymarketWsService implements OnModuleDestroy {
   private readonly logger = new Logger(PolymarketWsService.name);
   private ws: WebSocket | null = null;
   private pingInterval?: ReturnType<typeof setInterval>;
@@ -25,10 +18,6 @@ export class PolymarketWsService
     private readonly config: ConfigService<AppConfig, true>,
     private readonly tracker: PositionTrackerService,
   ) {}
-
-  onApplicationBootstrap(): void {
-    this.connect();
-  }
 
   onModuleDestroy(): void {
     this.destroyed = true;
@@ -59,7 +48,7 @@ export class PolymarketWsService
     }
   }
 
-  private connect(): void {
+  connect(): void {
     if (this.destroyed) {
       return;
     }

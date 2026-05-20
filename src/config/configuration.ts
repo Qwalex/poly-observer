@@ -89,7 +89,7 @@ export const configuration = (): AppConfig => {
 export const validationSchema = Joi.object({
   POSITIONS_USER_ADDRESS: ethAddress.optional(),
   USER_ADDRESS: ethAddress.optional(),
-  RELAYER_API_KEY: Joi.string().uuid().optional(),
+  RELAYER_API_KEY: Joi.string().optional(),
   RELAYER_API_KEY_ADDRESS: ethAddress.optional(),
   POLYMARKET_USER_ADDRESS: ethAddress.optional(),
   TELEGRAM_BOT_API: Joi.string().optional(),

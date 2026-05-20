@@ -1,10 +1,4 @@
-import {
-  Injectable,
-  Logger,
-  OnApplicationBootstrap,
-  OnModuleDestroy,
-  OnModuleInit,
-} from '@nestjs/common';
+import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { AppConfig } from '../config/configuration';
 import { PolymarketDataService } from './polymarket-data.service';
@@ -13,9 +7,7 @@ import { PositionTrackerService } from './position-tracker.service';
 import { ProfitMonitorService } from './profit-monitor.service';
 
 @Injectable()
-export class PositionSyncScheduler
-  implements OnModuleInit, OnApplicationBootstrap, OnModuleDestroy
-{
+export class PositionSyncScheduler implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(PositionSyncScheduler.name);
   private pollTimer?: ReturnType<typeof setInterval>;
 
@@ -32,10 +24,6 @@ export class PositionSyncScheduler
       infer: true,
     });
     this.pollTimer = setInterval(() => void this.sync(), intervalMs);
-  }
-
-  onApplicationBootstrap(): void {
-    void this.sync();
   }
 
   onModuleDestroy(): void {

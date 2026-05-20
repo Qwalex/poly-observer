@@ -3,6 +3,7 @@ import { Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
+import { DeferredStartupService } from './bootstrap/deferred-startup.service';
 import { AppConfig } from './config/configuration';
 
 async function bootstrap() {
@@ -24,6 +25,8 @@ async function bootstrap() {
     `Polymarket Profit Watcher listening on ${host}:${port}`,
     'Bootstrap',
   );
+
+  app.get(DeferredStartupService).start();
 }
 
 bootstrap();

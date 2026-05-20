@@ -1,12 +1,10 @@
-import { DynamicModule, Module, forwardRef } from '@nestjs/common';
+import { DynamicModule, Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TelegrafModule } from 'nestjs-telegraf';
 import { AppConfig } from '../config/configuration';
-import { PolymarketModule } from '../polymarket/polymarket.module';
 import { TelegramChatsService } from './telegram-chats.service';
-import { TelegramService } from './telegram.service';
 import { TelegramBootstrap } from './telegram.bootstrap';
-import { TelegramUpdate } from './telegram.update';
+import { TelegramService } from './telegram.service';
 
 @Module({})
 export class TelegramModule {
@@ -16,14 +14,15 @@ export class TelegramModule {
       process.env.TELEGREM_BOT_API ??
       process.env.TELEGRAM_BOT_TOKEN;
 
-    const providers = [TelegramChatsService, TelegramService];
-    const exports = [TelegramService, TelegramChatsService];
+    const providers = [TelegramChatsService, TelegramService, TelegramBootstrap];
+    const exports = [TelegramService, TelegramChatsService, TelegramBootstrap];
 
     if (!token) {
       return {
         module: TelegramModule,
         providers,
         exports,
+        global: true,
       };
     }
 
@@ -35,12 +34,11 @@ export class TelegramModule {
           inject: [ConfigService],
           useFactory: (config: ConfigService<AppConfig, true>) => ({
             token: config.get('telegramBotToken', { infer: true })!,
-            launchOptions: { dropPendingUpdates: true },
+            launchOptions: false,
           }),
         }),
-        forwardRef(() => PolymarketModule),
       ],
-      providers: [...providers, TelegramUpdate, TelegramBootstrap],
+      providers,
       exports,
       global: true,
     };
