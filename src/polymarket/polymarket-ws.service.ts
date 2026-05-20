@@ -22,12 +22,15 @@ export class PolymarketWsService implements OnModuleDestroy {
   onModuleDestroy(): void {
     this.destroyed = true;
     this.clearTimers();
-    this.ws?.close();
-    this.ws = null;
+    this.teardownSocket();
   }
 
   isConnected(): boolean {
     return this.ws?.readyState === WebSocket.OPEN;
+  }
+
+  isConnecting(): boolean {
+    return this.ws?.readyState === WebSocket.CONNECTING;
   }
 
   updateSubscriptions(assetIds: string[]): void {
@@ -37,31 +40,43 @@ export class PolymarketWsService implements OnModuleDestroy {
 
     this.subscribedAssets = unique;
 
-    if (prev === next) {
+    if (prev === next && (this.isConnected() || this.isConnecting())) {
       return;
     }
 
-    if (this.isConnected() && unique.length > 0) {
-      this.sendSubscription(unique);
-    } else if (!this.isConnected()) {
-      this.connect();
+    if (unique.length === 0) {
+      return;
     }
+
+    if (this.isConnected()) {
+      this.sendSubscription(unique);
+      return;
+    }
+
+    if (this.isConnecting()) {
+      return;
+    }
+
+    this.connect();
   }
 
   connect(): void {
-    if (this.destroyed) {
+    if (this.destroyed || this.isConnected() || this.isConnecting()) {
       return;
     }
 
     const url = this.config.get('marketWsUrl', { infer: true });
     this.clearTimers();
-    this.ws?.removeAllListeners();
-    this.ws?.close();
+    this.teardownSocket();
 
     this.logger.log(`Connecting to market WebSocket: ${url}`);
-    this.ws = new WebSocket(url);
+    const socket = new WebSocket(url);
+    this.ws = socket;
 
-    this.ws.on('open', () => {
+    socket.on('open', () => {
+      if (this.ws !== socket) {
+        return;
+      }
       this.reconnectAttempt = 0;
       this.logger.log('Market WebSocket connected');
       this.pingInterval = setInterval(() => {
@@ -75,7 +90,7 @@ export class PolymarketWsService implements OnModuleDestroy {
       }
     });
 
-    this.ws.on('message', (raw) => {
+    socket.on('message', (raw) => {
       const data = raw.toString();
       if (data === 'PONG' || data === 'PING') {
         return;
@@ -83,12 +98,16 @@ export class PolymarketWsService implements OnModuleDestroy {
       this.handleMessage(data);
     });
 
-    this.ws.on('close', () => {
+    socket.on('close', () => {
+      if (this.ws !== socket) {
+        return;
+      }
       this.logger.warn('Market WebSocket closed');
+      this.ws = null;
       this.scheduleReconnect();
     });
 
-    this.ws.on('error', (err) => {
+    socket.on('error', (err) => {
       this.logger.error(`Market WebSocket error: ${err.message}`);
     });
   }
@@ -112,6 +131,21 @@ export class PolymarketWsService implements OnModuleDestroy {
     if (this.reconnectTimeout) {
       clearTimeout(this.reconnectTimeout);
       this.reconnectTimeout = undefined;
+    }
+  }
+
+  private teardownSocket(): void {
+    const socket = this.ws;
+    if (!socket) {
+      return;
+    }
+    this.ws = null;
+    socket.removeAllListeners();
+    socket.on('error', () => undefined);
+    try {
+      socket.terminate();
+    } catch {
+      // ignore
     }
   }
 

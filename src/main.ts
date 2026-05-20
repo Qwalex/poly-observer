@@ -29,4 +29,12 @@ async function bootstrap() {
   app.get(DeferredStartupService).start();
 }
 
+process.on('uncaughtException', (err) => {
+  Logger.error(`Uncaught exception: ${err.message}`, err.stack, 'Process');
+});
+
+process.on('unhandledRejection', (reason) => {
+  Logger.error(`Unhandled rejection: ${reason}`, undefined, 'Process');
+});
+
 bootstrap();
